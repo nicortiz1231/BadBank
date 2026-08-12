@@ -1,9 +1,11 @@
 node_modules/
 .env
-.env.*
+*.env
 server/.env
 server/config.env
+client/.env
+client/build/
 .DS_Store
-build/
-dist/
-*.log
+client/src-backup/
+client/src-backup-*/
+client/src/App-dashboard-backup.css

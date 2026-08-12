@@ -1,38 +1,50 @@
 import React, { useContext, useState } from "react";
+import { Link } from "react-router-dom";
 import { AppContext } from "./context";
-import Card from "./card";
 
-const TIMEOUT_MSEC = 3000;
-const MINIMUM_PASSWORD_LENGTH = 8;
-
-const API_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5050";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5050";
 
 function Account() {
-  const [cleared, setCleared] = useState(false);
-  const [needInput, setNeedInput] = useState(true);
-  const [status, setStatus] = useState("");
-  const [submitDisabled, setSubmitDisabled] = useState("");
+  const { Users, setUsers } = useContext(AppContext);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [status, setStatus] = useState("");
+  const [created, setCreated] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const ctx = useContext(AppContext);
+  async function handleSubmit(event) {
+    event.preventDefault();
 
-  async function onSubmit(e) {
-    e.preventDefault();
+    setStatus("");
 
-    if (!checkFields()) {
+    if (!name.trim() || !email.trim() || !password) {
+      setStatus("Complete every field before creating your account.");
       return;
     }
 
-    ctx.Users.push({ name, email, password });
+    if (password.length < 8) {
+      setStatus("Use at least 8 characters for the demo password.");
+      return;
+    }
 
-    const newPerson = {
-      name,
-      email,
+    if (
+      Users.some(
+        (user) => user.email?.toLowerCase() === email.trim().toLowerCase()
+      )
+    ) {
+      setStatus("An account with this email already exists.");
+      return;
+    }
+
+    setLoading(true);
+
+    const newUser = {
+      name: name.trim(),
+      email: email.trim(),
       password,
+      balance: 0,
     };
 
     try {
@@ -41,194 +53,166 @@ function Account() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newPerson),
+        body: JSON.stringify(newUser),
       });
 
       if (!response.ok) {
-        throw new Error(
-          `Unable to create account: ${response.statusText}`
-        );
+        throw new Error("Unable to create the account.");
       }
 
-      setNeedInput(false);
+      const createdUser = await response.json().catch(() => newUser);
+
+      setUsers([...Users, createdUser]);
+      setCreated(true);
     } catch (error) {
-      console.error("Create account error:", error);
-      window.alert(error.message);
+      setStatus(error.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  function validate(field, label) {
-    if (!field) {
-      setStatus(`Error: ${label} is required`);
-      setTimeout(() => setStatus(""), TIMEOUT_MSEC);
-      setSubmitDisabled("Disabled");
-      return false;
-    }
-
-    if (label === "email") {
-      let emailInUse = false;
-
-      for (let i = 0; i < ctx.Users.length; i++) {
-        if (ctx.Users[i].email === field) {
-          emailInUse = true;
-          break;
-        }
-      }
-
-      if (emailInUse) {
-        setStatus("Error: The supplied email is already in use.");
-        setTimeout(() => setStatus(""), TIMEOUT_MSEC);
-        setSubmitDisabled("Disabled");
-        return false;
-      }
-    }
-
-    if (label === "password") {
-      if (field.length < MINIMUM_PASSWORD_LENGTH) {
-        setStatus(
-          `Error: Password must be at least ${MINIMUM_PASSWORD_LENGTH} characters.`
-        );
-        setTimeout(() => setStatus(""), TIMEOUT_MSEC);
-        setSubmitDisabled("Disabled");
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  function checkFields() {
-    setSubmitDisabled("Disabled");
-
-    if (!validate(name, "name")) return false;
-    if (!validate(email, "email")) return false;
-    if (!validate(password, "password")) return false;
-
-    setSubmitDisabled("");
-
-    return true;
-  }
-
-  function clearForm() {
+  function resetForm() {
     setName("");
     setEmail("");
     setPassword("");
-    setSubmitDisabled("Disabled");
-  }
-
-  function clearForm_Click() {
-    clearForm();
-    setNeedInput(true);
-  }
-
-  if (!cleared) {
-    clearForm();
-    setCleared(true);
+    setStatus("");
+    setCreated(false);
   }
 
   return (
-    <Card
-      bgcolor="primary"
-      header="Account"
-      width="30rem"
-      status={status}
-      body={
-        needInput ? (
-          <form onSubmit={onSubmit}>
-            <div>
-              <label htmlFor="name">Name</label>
-              <br />
-              <input
-                type="input"
-                autoComplete="new-password"
-                required={true}
-                id="name"
-                placeholder="Enter name"
-                value={name}
-                onChange={(e) => {
-                  setSubmitDisabled("");
-                  setName(e.currentTarget.value);
-                  validate(e.currentTarget.value, "name");
-                }}
-                className="form-control"
-              />
-              <br />
+    <section className="page-shell">
+      <div className="page-container">
+        <div className="page-heading">
+          <span className="eyebrow">Get started</span>
+          <h1>Open your BadBank account.</h1>
 
-              <label htmlFor="email">Email Address</label>
-              <br />
-              <input
-                type="email"
-                autoComplete="new-password"
-                required={true}
-                id="email"
-                placeholder="Enter email"
-                value={email}
-                onChange={(e) => {
-                  setSubmitDisabled("");
-                  setEmail(e.currentTarget.value);
-                  validate(e.currentTarget.value, "email");
-                }}
-                className="form-control"
-              />
-              <br />
+          <p>
+            Create a demo checking account and explore the full banking
+            workflow.
+          </p>
+        </div>
 
-              <label htmlFor="password">Password</label>
-              <br />
-              <input
-                type="password"
-                autoComplete="new-password"
-                required={true}
-                id="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => {
-                  setSubmitDisabled("");
-                  setPassword(e.currentTarget.value);
-                  validate(e.currentTarget.value, "password");
-                }}
-                className="form-control"
-              />
-              <br />
-            </div>
+        <div className="banking-layout">
+          <div className="bank-card">
+            {!created ? (
+              <>
+                <div className="bank-card-header">
+                  <h2>Create account</h2>
+                  <p>Enter your details below.</p>
+                </div>
 
-            <div>
-              <button
-                type="button"
-                className="btn btn-light"
-                onClick={clearForm_Click}
-              >
-                Clear
-              </button>
+                {status && <div className="status-message">{status}</div>}
 
-              <> </>
+                <form className="bank-form" onSubmit={handleSubmit}>
+                  <div className="form-group">
+                    <label htmlFor="name">Full name</label>
 
-              <button
-                type="submit"
-                className="btn btn-light"
-                disabled={submitDisabled}
-              >
-                Create
-              </button>
+                    <input
+                      id="name"
+                      type="text"
+                      value={name}
+                      placeholder="Nick Ortiz"
+                      onChange={(event) => setName(event.target.value)}
+                    />
+                  </div>
 
-              <br />
-            </div>
-          </form>
-        ) : (
-          <>
-            <h5>Success</h5>
-            <br />
+                  <div className="form-group">
+                    <label htmlFor="email">Email address</label>
 
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={clearForm_Click}
-            >
-              Add another account
-            </button>
-          </>
-        )
-      }
-    />
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      placeholder="nick@example.com"
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="password">Password</label>
+
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      placeholder="At least 8 characters"
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+
+                    <span className="field-hint">
+                      Do not use a real password.
+                    </span>
+                  </div>
+
+                  <div className="security-warning">
+                    <strong>Educational security warning</strong>
+
+                    <p>
+                      BadBank intentionally demonstrates insecure credential
+                      handling. Never reuse a real password here.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="bank-button primary"
+                    disabled={loading}
+                  >
+                    {loading ? "Creating account..." : "Create account"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="success-state">
+                <div className="success-icon">✓</div>
+
+                <h2>Account created</h2>
+
+                <p>
+                  Your demo account is ready. Continue to login and start
+                  exploring the application.
+                </p>
+
+                <div className="success-actions">
+                  <button
+                    type="button"
+                    className="bank-button secondary"
+                    onClick={resetForm}
+                  >
+                    Create another
+                  </button>
+
+                  <Link
+                    to="/login/"
+                    className="bank-button primary button-link"
+                  >
+                    Continue to login
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="info-panel">
+            <span className="panel-eyebrow">DEMO ACCOUNT</span>
+
+            <h3>Built like a banking onboarding flow.</h3>
+
+            <p>
+              Create an account, authenticate, manage a balance, and then
+              inspect the security weaknesses underneath the application.
+            </p>
+
+            <ul className="info-list">
+              <li>MongoDB-backed account records</li>
+              <li>Deposit and withdrawal functionality</li>
+              <li>Portfolio-ready visual design</li>
+              <li>Intentional security vulnerabilities</li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+    </section>
   );
 }
 

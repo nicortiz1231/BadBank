@@ -1,236 +1,223 @@
 import React, { useContext, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AppContext } from "./context";
-import Card from "./card";
 
-const TIMEOUT_MSEC = 3000;
-
-const API_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5050";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5050";
 
 function Login() {
-  const [cleared, setCleared] = useState(false);
-  const [needInput, setNeedInput] = useState(true);
-  const [status, setStatus] = useState("");
-  const [submitDisabled, setSubmitDisabled] = useState("");
+  const {
+    Users,
+    setUsers,
+    LoggedIn,
+    setLoggedIn,
+    CurrentUser,
+    setCurrentUser,
+    UserIndex,
+    setUserIndex,
+    setBalance,
+  } = useContext(AppContext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const [records, setRecords] = useState([]);
-
-  const ctx = useContext(AppContext);
+  const [status, setStatus] = useState("");
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
 
   useEffect(() => {
-    async function getRecords() {
+    async function loadAccounts() {
       try {
         const response = await fetch(`${API_URL}/record/`);
 
         if (!response.ok) {
-          throw new Error(
-            `Unable to load accounts: ${response.statusText}`
-          );
+          throw new Error("Unable to connect to the account API.");
         }
 
-        const records = await response.json();
-        setRecords(records);
+        const data = await response.json();
+        setUsers(data);
       } catch (error) {
-        console.error("Login data error:", error);
-        window.alert(error.message);
+        setStatus(error.message);
+      } finally {
+        setLoadingAccounts(false);
       }
     }
 
-    getRecords();
-  }, []);
+    loadAccounts();
+  }, [setUsers]);
 
-  function validate(field, label) {
-    if (!field) {
-      setStatus(`Error: ${label} is required`);
-      setTimeout(() => setStatus(""), TIMEOUT_MSEC);
-      setSubmitDisabled("Disabled");
-      return false;
+  function handleLogin(event) {
+    event.preventDefault();
+
+    setStatus("");
+
+    const index = Users.findIndex(
+      (user) =>
+        user.email?.toLowerCase() === email.trim().toLowerCase() &&
+        user.password === password
+    );
+
+    if (index === -1) {
+      setStatus("We couldn't match that email and password.");
+      return;
     }
 
-    if (label === "email") {
-      let emailExists = false;
+    const user = Users[index];
 
-      for (let i = 0; i < records.length; i++) {
-        if (records[i].email === field) {
-          emailExists = true;
-          break;
-        }
-      }
-
-      if (!emailExists) {
-        setStatus("Error: The supplied email has no Account.");
-        setTimeout(() => setStatus(""), TIMEOUT_MSEC);
-        setSubmitDisabled("Disabled");
-        return false;
-      }
-    }
-
-    return true;
+    setLoggedIn(true);
+    setCurrentUser(user.email);
+    setUserIndex(index);
+    setBalance(Number(user.balance) || 0);
   }
 
-  function checkFields() {
-    setSubmitDisabled("Disabled");
-
-    if (!validate(email, "email")) return false;
-    if (!validate(password, "password")) return false;
-
-    setSubmitDisabled("");
-
-    return true;
-  }
-
-  function clearForm() {
+  function handleLogout() {
+    setLoggedIn(false);
+    setCurrentUser("");
+    setUserIndex(0);
+    setBalance(0);
     setEmail("");
     setPassword("");
-    setSubmitDisabled("Disabled");
-    setNeedInput(true);
   }
 
-  function clearForm_Click() {
-    clearForm();
-    setNeedInput(true);
-  }
+  if (LoggedIn) {
+    const user =
+      Users.find((record) => record.email === CurrentUser) || Users[UserIndex];
 
-  function logIn_Click() {
-    console.log("Login:", email);
+    return (
+      <section className="page-shell">
+        <div className="page-container">
+          <div className="page-heading">
+            <span className="eyebrow">Account access</span>
+            <h1>You're signed in.</h1>
+            <p>Continue to your banking dashboard.</p>
+          </div>
 
-    if (!checkFields()) {
-      return;
-    }
+          <div className="banking-layout">
+            <div className="bank-card">
+              <div className="signed-in-profile">
+                <div className="profile-avatar">
+                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </div>
 
-    let loginSuccess = false;
+                <div>
+                  <span className="account-label">BadBank customer</span>
+                  <h2>{user?.name || "Bank User"}</h2>
+                  <p>{user?.email}</p>
+                </div>
+              </div>
 
-    for (let i = 0; i < records.length; i++) {
-      if (
-        records[i].email === email &&
-        records[i].password === password
-      ) {
-        loginSuccess = true;
+              <div className="logged-in-actions">
+                <Link
+                  to="/balance/"
+                  className="bank-button primary button-link"
+                >
+                  View account overview
+                </Link>
 
-        ctx.setLoggedIn(true);
-        ctx.setCurrentUser(email);
-        ctx.setUserIndex(i);
+                <button
+                  type="button"
+                  className="bank-button secondary"
+                  onClick={handleLogout}
+                >
+                  Log out
+                </button>
+              </div>
+            </div>
 
-        break;
-      }
-    }
+            <aside className="info-panel">
+              <span className="panel-eyebrow">ONLINE BANKING</span>
 
-    if (!loginSuccess) {
-      setStatus("Error: Login failed, check email and password.");
-      setTimeout(() => setStatus(""), TIMEOUT_MSEC);
-      setSubmitDisabled("Disabled");
-      return;
-    }
+              <h3>Your demo account is active.</h3>
 
-    setNeedInput(false);
-  }
-
-  function logOut_Click() {
-    console.log("Logout:", email);
-
-    ctx.setLoggedIn(false);
-    ctx.setCurrentUser("You must log in...");
-    ctx.setUserIndex(0);
-
-    setNeedInput(true);
-  }
-
-  if (!cleared) {
-    clearForm();
-    setCleared(true);
-    setNeedInput(!ctx.LoggedIn);
+              <p>
+                Deposit funds, withdraw money, inspect your balance, and explore
+                the security demonstration.
+              </p>
+            </aside>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
-    <Card
-      bgcolor="secondary"
-      header="Login"
-      width="30rem"
-      status={status}
-      body={
-        needInput ? (
-          <form>
-            Email Address
-            <br />
+    <section className="page-shell">
+      <div className="page-container">
+        <div className="page-heading">
+          <span className="eyebrow">Welcome back</span>
+          <h1>Log in to your account.</h1>
 
-            <input
-              type="email"
-              autoComplete="new-password"
-              required={true}
-              className="form-control"
-              id="email"
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => {
-                setSubmitDisabled("");
-                setEmail(e.currentTarget.value);
-                validate(e.currentTarget.value, "email");
-              }}
-            />
+          <p>
+            Access your checking account, review your balance, and move demo
+            funds.
+          </p>
+        </div>
 
-            <br />
+        <div className="banking-layout">
+          <div className="bank-card">
+            <div className="bank-card-header">
+              <h2>Online banking</h2>
+              <p>Use the credentials from your BadBank account.</p>
+            </div>
 
-            Password
-            <br />
+            {status && <div className="status-message">{status}</div>}
 
-            <input
-              type="password"
-              autoComplete="new-password"
-              required={true}
-              className="form-control"
-              id="password"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => {
-                setSubmitDisabled("");
-                setPassword(e.currentTarget.value);
-                validate(e.currentTarget.value, "password");
-              }}
-            />
+            <form className="bank-form" onSubmit={handleLogin}>
+              <div className="form-group">
+                <label htmlFor="login-email">Email address</label>
 
-            <br />
+                <input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  placeholder="nick@example.com"
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
 
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={clearForm_Click}
-            >
-              Clear
-            </button>
+              <div className="form-group">
+                <label htmlFor="login-password">Password</label>
 
-            <> </>
+                <input
+                  id="login-password"
+                  type="password"
+                  value={password}
+                  placeholder="Enter your password"
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </div>
 
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={logIn_Click}
-              disabled={submitDisabled}
-            >
-              Log In
-            </button>
+              <div className="login-form-actions">
+                <Link to="/account/" className="login-help-link">
+                  Need an account?
+                </Link>
 
-            <br />
-          </form>
-        ) : (
-          <>
-            <h5>{ctx.CurrentUser} is logged in.</h5>
+                <button
+                  type="submit"
+                  className="bank-button primary"
+                  disabled={loadingAccounts}
+                >
+                  {loadingAccounts ? "Loading..." : "Log in"}
+                </button>
+              </div>
+            </form>
+          </div>
 
-            <br />
+          <aside className="info-panel">
+            <span className="panel-eyebrow">SECURITY DEMO</span>
 
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={logOut_Click}
-            >
-              Log Out
-            </button>
-          </>
-        )
-      }
-    />
+            <h3>Intentionally insecure authentication.</h3>
+
+            <p>
+              This application compares your entered password directly with a
+              stored value to demonstrate a pattern that real systems should
+              never use.
+            </p>
+
+            <div className="dark-warning">
+              <strong>Never use a real password.</strong>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
   );
 }
 
