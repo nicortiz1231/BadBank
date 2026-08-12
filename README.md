@@ -6,29 +6,33 @@ The project is intentionally insecure and is meant to demonstrate why securely s
 
 ## Live Demo
 
-https://bad-bank-rho.vercel.app
+[https://bad-bank-rho.vercel.app](https://bad-bank-rho.vercel.app)
+
+## Showcase
+
+![BadBank](BadBank.gif)
 
 ## Features
 
-* Create an account
-* Log in and log out
-* Deposit funds
-* Withdraw funds
-* View account balance
-* Persist data with MongoDB
-* View stored account data
-* Basic overdraft protection
+- Create an account
+- Log in and log out
+- Deposit funds
+- Withdraw funds
+- View account balance
+- Persist data with MongoDB
+- View stored account data
+- Basic overdraft protection
 
 ## Tech Stack
 
-* React
-* JavaScript
-* Node.js
-* Express
-* MongoDB Atlas
-* Bootstrap
-* Vercel
-* Render
+- React
+- JavaScript
+- Node.js
+- Express
+- MongoDB Atlas
+- Bootstrap
+- Vercel
+- Render
 
 ## How It Works
 
