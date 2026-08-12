@@ -2,6 +2,9 @@ import React, { useContext, useState } from "react";
 import Card from "./card";
 import { AppContext } from "./context";
 
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5050";
+
 function Withdraw() {
   const {
     CurrentUser,
@@ -26,8 +29,7 @@ function Withdraw() {
     }
 
     try {
-      // Get the current account data from the backend
-      const response = await fetch("http://localhost:5050/record/");
+      const response = await fetch(`${API_URL}/record/`);
 
       if (!response.ok) {
         throw new Error("Unable to retrieve account information.");
@@ -45,7 +47,6 @@ function Withdraw() {
 
       const currentBalance = Number(account.balance) || 0;
 
-      // Prevent overdrawing the account
       if (amount > currentBalance) {
         setStatus("Overdraft Protection: Insufficient funds.");
         return;
@@ -53,9 +54,8 @@ function Withdraw() {
 
       const newBalance = currentBalance - amount;
 
-      // Persist the new balance to MongoDB
       const updateResponse = await fetch(
-        `http://localhost:5050/record/${account._id}`,
+        `${API_URL}/record/${account._id}`,
         {
           method: "PATCH",
           headers: {
@@ -74,7 +74,6 @@ function Withdraw() {
         throw new Error("Unable to update account balance.");
       }
 
-      // Update React state so the UI changes immediately
       setBalance(newBalance);
 
       setStatus(

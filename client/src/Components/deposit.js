@@ -2,6 +2,9 @@ import React, { useContext, useState } from "react";
 import Card from "./card";
 import { AppContext } from "./context";
 
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5050";
+
 function Deposit() {
   const {
     CurrentUser,
@@ -26,8 +29,7 @@ function Deposit() {
     }
 
     try {
-      // Get all accounts from the backend
-      const response = await fetch("http://localhost:5050/record/");
+      const response = await fetch(`${API_URL}/record/`);
 
       if (!response.ok) {
         throw new Error("Unable to retrieve account information.");
@@ -35,7 +37,6 @@ function Deposit() {
 
       const accounts = await response.json();
 
-      // Find the currently logged-in account by email
       const account = accounts.find(
         (user) => user.email === CurrentUser
       );
@@ -47,9 +48,8 @@ function Deposit() {
       const currentBalance = Number(account.balance) || 0;
       const newBalance = currentBalance + amount;
 
-      // Update the account in MongoDB
       const updateResponse = await fetch(
-        `http://localhost:5050/record/${account._id}`,
+        `${API_URL}/record/${account._id}`,
         {
           method: "PATCH",
           headers: {
@@ -68,7 +68,6 @@ function Deposit() {
         throw new Error("Unable to update account balance.");
       }
 
-      // Update React state so the UI reflects the new balance immediately
       setBalance(newBalance);
 
       setStatus(

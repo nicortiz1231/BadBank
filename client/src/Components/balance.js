@@ -2,6 +2,9 @@ import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "./context";
 import Card from "./card";
 
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5050";
+
 function Balance() {
   const {
     Balance,
@@ -20,7 +23,7 @@ function Balance() {
       }
 
       try {
-        const response = await fetch("http://localhost:5050/record/");
+        const response = await fetch(`${API_URL}/record/`);
 
         if (!response.ok) {
           throw new Error("Unable to retrieve account information.");

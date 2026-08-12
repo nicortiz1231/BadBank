@@ -4,6 +4,9 @@ import Card from "./card";
 
 const TIMEOUT_MSEC = 3000;
 
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5050";
+
 function Login() {
   const [cleared, setCleared] = useState(false);
   const [needInput, setNeedInput] = useState(true);
@@ -19,16 +22,21 @@ function Login() {
 
   useEffect(() => {
     async function getRecords() {
-      const response = await fetch("http://localhost:5050/record/");
+      try {
+        const response = await fetch(`${API_URL}/record/`);
 
-      if (!response.ok) {
-        const message = `An error occurred: ${response.statusText}`;
-        window.alert(message);
-        return;
+        if (!response.ok) {
+          throw new Error(
+            `Unable to load accounts: ${response.statusText}`
+          );
+        }
+
+        const records = await response.json();
+        setRecords(records);
+      } catch (error) {
+        console.error("Login data error:", error);
+        window.alert(error.message);
       }
-
-      const records = await response.json();
-      setRecords(records);
     }
 
     getRecords();
