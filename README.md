@@ -10,7 +10,7 @@ The project is intentionally insecure and is meant to demonstrate why securely s
 
 ## Showcase
 
-![BadBank](BadBank.gif)
+![BadBank](BadBankDemo.gif)
 
 ## Features
 
