@@ -1,59 +1,84 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { AppContext } from './context.js';
-import Card from './card.js';
-import { simplifyText } from '../mcodeClient.js';
+import React, { useContext, useEffect, useState } from "react";
+import Card from "./card.js";
+import { AppContext } from "./context.js";
+
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5050";
 
 function AllData() {
-    const ctx = useContext(AppContext);
+  const { LoggedIn } = useContext(AppContext);
+  const [records, setRecords] = useState([]);
 
-    const [records, setRecords] = useState([]);
-
-    useEffect(() => {
-        async function getRecords() {
-            const response = await fetch(`http://localhost:5050/record/`);
-            if (!response.ok) {
-                const message = `An error occurred: ${response.statusText}`;
-                window.alert(message);
-                return;
-            }
-            const records = await response.json();
-            setRecords(records);
-        }
-        getRecords();
+  useEffect(() => {
+    async function getRecords() {
+      if (!LoggedIn) {
+        setRecords([]);
         return;
-    }, [records.length]);
+      }
 
-    const buildAccountList = () => {
-        const accountArray = [];
-        var key = 0;
-    
-        for (let record of records) {
-            const { name, email, password } = record; // Destructure the record to get specific fields
-            accountArray.push(
-                <li key={key} className="list-group-item">
-                    {simplifyText(JSON.stringify({ name, email, password }))}
-                </li>
-            );
-            key++;
+      try {
+        const response = await fetch(`${API_URL}/record/`);
+
+        if (!response.ok) {
+          throw new Error(
+            `Unable to load account data: ${response.statusText}`
+          );
         }
-    
-        return accountArray;
-    };
-    
 
+        const records = await response.json();
+        setRecords(records);
+      } catch (error) {
+        console.error("All Data error:", error);
+      }
+    }
+
+    getRecords();
+  }, [LoggedIn]);
+
+  if (!LoggedIn) {
     return (
-        <Card
-            bgcolor="warning"
-            header="Account Data"
-            width="60rem"
-            body={(
-                <ul className="list-group">
-                    {buildAccountList()}
-                    {console.log(records)}
-                </ul>
-            )}
-        />
+      <Card
+        bgcolor="warning"
+        header="Account Data"
+        width="60rem"
+        body={
+          <div>
+            <h5>Please log in to view account data.</h5>
+          </div>
+        }
+      />
     );
+  }
+
+  return (
+    <Card
+      bgcolor="warning"
+      header="Account Data"
+      width="60rem"
+      body={
+        <ul className="list-group">
+          {records.map((record) => (
+            <li
+              key={record._id}
+              className="list-group-item"
+            >
+              <strong>Name:</strong> {record.name}
+              <br />
+
+              <strong>Email:</strong> {record.email}
+              <br />
+
+              <strong>Password:</strong> {record.password}
+              <br />
+
+              <strong>Balance:</strong> $
+              {(Number(record.balance) || 0).toFixed(2)}
+            </li>
+          ))}
+        </ul>
+      }
+    />
+  );
 }
 
 export default AllData;
