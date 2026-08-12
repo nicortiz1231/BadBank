@@ -1,22 +1,71 @@
-import React, { useContext } from 'react';
-import { AppContext } from './context';
-import Card from './card';
+import React, { useContext, useEffect, useState } from "react";
+import { AppContext } from "./context";
+import Card from "./card";
 
 function Balance() {
-    const { Balance } = useContext(AppContext);
+  const {
+    Balance,
+    setBalance,
+    CurrentUser,
+    LoggedIn,
+  } = useContext(AppContext);
 
-    return (
-        <Card
-            bgcolor="info"
-            header="Balance"
-            width="30rem"
-            body={
-                <div>
-                    <h3>Current Balance: ${Balance}</h3>
-                </div>
-            }
-        />
-    );
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    async function loadBalance() {
+      if (!LoggedIn) {
+        setStatus("You must log in to view your balance.");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:5050/record/");
+
+        if (!response.ok) {
+          throw new Error("Unable to retrieve account information.");
+        }
+
+        const accounts = await response.json();
+
+        const account = accounts.find(
+          (user) => user.email === CurrentUser
+        );
+
+        if (!account) {
+          throw new Error("Logged-in account could not be found.");
+        }
+
+        const currentBalance = Number(account.balance) || 0;
+
+        setBalance(currentBalance);
+        setStatus("");
+      } catch (error) {
+        console.error("Balance error:", error);
+        setStatus(error.message);
+      }
+    }
+
+    loadBalance();
+  }, [CurrentUser, LoggedIn, setBalance]);
+
+  return (
+    <Card
+      bgcolor="info"
+      header="Balance"
+      width="30rem"
+      status={status}
+      body={
+        <div>
+          {LoggedIn ? (
+            <h3>Current Balance: ${Balance.toFixed(2)}</h3>
+          ) : (
+            <p>Please log in to view your balance.</p>
+          )}
+        </div>
+      }
+    />
+  );
 }
 
 export default Balance;
