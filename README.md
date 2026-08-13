@@ -6,7 +6,7 @@ The project was created to demonstrate common banking workflows while intentiona
 
 ## Live Demo
 
-[View BadBank Live](https://bad-bank-rho.vercel.app)
+[BadBank](https://bad-bank-rho.vercel.app)
 
 ## Showcase
 
